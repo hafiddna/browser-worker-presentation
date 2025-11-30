@@ -141,7 +141,7 @@ export default function Home() {
 
 	return (
 		<div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-			<main className="flex min-h-screen w-full flex-col items-center py-32 px-16 bg-white dark:bg-black sm:items-start">
+			<main className="flex min-h-screen w-full flex-col items-center pt-10 pb-32 px-16 bg-white dark:bg-black sm:items-start">
 				<div className="w-full flex justify-between items-center mb-16">
 					<Image
 						className="dark:invert"
