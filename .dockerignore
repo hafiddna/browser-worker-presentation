@@ -1,0 +1,29 @@
+# Node modules - don't copy them, we'll install them inside the container
+node_modules
+
+# Build output
+.next
+out
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+
+# Editor/IDE stuff
+*.swp
+*.swo
+*.bak
+*.tmp
+.idea/
+.vscode/
+*.code-workspace

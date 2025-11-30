@@ -1,0 +1,8 @@
+services:
+  browser-worker-presentation:
+    build:
+      context: ../../
+      dockerfile: docker/local/Dockerfile
+    image: browser-worker-presentation:latest
+    ports:
+      - "3002:3000"
