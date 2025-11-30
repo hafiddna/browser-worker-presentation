@@ -152,8 +152,6 @@ export default function Home() {
 														<SelectValue placeholder="Select" />
 													</SelectTrigger>
 													<SelectContent position="item-aligned">
-														<SelectItem value="auto">Auto</SelectItem>
-														<SelectSeparator />
 														{options.map((language) => (
 															<SelectItem key={language.value} value={language.value}>
 																{language.value}
