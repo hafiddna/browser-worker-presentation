@@ -239,7 +239,7 @@ export default function Home() {
 														<InputGroupTextarea
 															{...field}
 															id="form-rhf-demo-prompt"
-															placeholder="I'm having an issue with the login button on mobile."
+															placeholder="E.g., Extract all article titles and their publication dates."
 															rows={6}
 															className="min-h-24 resize-none"
 															aria-invalid={fieldState.invalid}
