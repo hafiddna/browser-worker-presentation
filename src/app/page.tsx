@@ -16,6 +16,9 @@ import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
 
+const cloudflareApiToken = process.env.CLOUDFLARE_API_TOKEN ?? "";
+const cloudflareAccountId = process.env.CLOUDFLARE_ACCOUNT_ID ?? "";
+
 const options = [
 	{
 		value: "/content",
