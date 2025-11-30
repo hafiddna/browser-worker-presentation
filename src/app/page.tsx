@@ -3,58 +3,55 @@
 import React from "react";
 import Image from "next/image";
 
+import { ThemeToggler } from "@/components/theme-toggler";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input"
 import { InputGroup, InputGroupAddon, InputGroupText, InputGroupTextarea } from "@/components/ui/input-group"
-import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ThemeToggler } from "@/components/theme-toggler";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Skeleton } from "@/components/ui/skeleton";
+import { CodeEditor } from '@/components/ui/shadcn-io/code-editor';
+import { WebPreview, WebPreviewBody } from '@/components/ui/shadcn-io/ai/web-preview';
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Settings } from 'lucide-react';
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
 
-const cloudflareApiToken = process.env.CLOUDFLARE_API_TOKEN ?? "";
-const cloudflareAccountId = process.env.CLOUDFLARE_ACCOUNT_ID ?? "";
-
 const options = [
 	{
 		value: "/content",
-		description: "Get the content of a website.",
+		description: "The /content endpoint instructs the browser to navigate to a website and capture the fully rendered HTML of a page, including the head section, after JavaScript execution. This is ideal for capturing content from JavaScript-heavy or interactive websites.",
 	},
 	{
 		value: "/screenshot",
-		description: "Take a screenshot of a website.",
+		description: "The /screenshot endpoint renders the webpage by processing its HTML and JavaScript, then captures a screenshot of the fully rendered page.",
 	},
 	{
 		value: "/pdf",
-		description: "Convert a website to PDF.",
+		description: "The /pdf endpoint instructs the browser to generate a PDF of a webpage or custom HTML using Cloudflare's headless browser rendering service.",
 	},
 	{
 		value: "/snapshot",
-		description: "Take a snapshot of a website.",
+		description: "The /snapshot endpoint captures both the HTML content and a screenshot of the webpage in one request. It returns the HTML as a text string and the screenshot as a Base64-encoded image.",
 	},
 	{
 		value: "/scrape",
-		description: "Scrape a website for data.",
+		description: "The /scrape endpoint extracts structured data from specific elements on a webpage, returning details such as element dimensions and inner HTML.",
 	},
 	{
 		value: "/json",
-		description: "Get the JSON representation of a website.",
+		description: "The /json endpoint extracts structured data from a webpage. You can specify the expected output using either a prompt or a response_format parameter which accepts a JSON schema. The endpoint returns the extracted data in JSON format. By default, this endpoint leverages Workers AI. If you would like to specify your own AI model for the extraction, you can use the custom_ai parameter.",
 	},
 	{
 		value: "/links",
-		description: "Get all the links on a website.",
+		description: "The /links endpoint retrieves all links from a webpage. It can be used to extract all links from a page, including those that are hidden.",
 	},
 	{
 		value: "/markdown",
-		description: "Convert a website to Markdown.",
-	},
-	{
-		value: "basic",
-		description: "Basic usage example.",
+		description: "The /markdown endpoint retrieves a webpage's content and converts it into Markdown format. You can specify a URL and optional parameters to refine the extraction process.",
 	}
 ];
 
@@ -65,27 +62,29 @@ const formSchema = z.object({
 		.refine((val) => options.some((option) => option.value === val), {
 			message: "Invalid option selected.",
 		}),
-	title: z
+	url: z
 		.string()
-		.min(5, "Bug title must be at least 5 characters.")
-		.max(32, "Bug title must be at most 32 characters."),
-	description: z
-		.string()
-		.min(20, "Description must be at least 20 characters.")
-		.max(100, "Description must be at most 100 characters."),
+		.nonempty("URL is required.")
+		.url("Please enter a valid URL."),
+	prompt: z
+		.string(),
 })
 
 export default function Home() {
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	const [response, setResponse] = React.useState<any>(null);
+	const [loading, setLoading] = React.useState(false);
+
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
 		defaultValues: {
 			options: "/content",
-			title: "",
-			description: "",
+			url: "https://example.com",
+			prompt: "",
 		},
 	})
 
-	function onSubmit(data: z.infer<typeof formSchema>) {
+	async function onSubmit(data: z.infer<typeof formSchema>) {
 		toast("You submitted the following values:", {
 			description: (
 				<pre className="bg-code text-code-foreground mt-2 w-[320px] overflow-x-auto rounded-md p-4">
@@ -100,11 +99,49 @@ export default function Home() {
 				"--border-radius": "calc(var(--radius)  + 4px)",
 			} as React.CSSProperties,
 		})
+
+		setLoading(true);
+
+		fetch("/api/cloudflare", {
+			method: "POST",
+			body: (() => {
+				const formData = new FormData();
+				formData.append("options", data.options);
+				formData.append("url", data.url);
+				if (data.prompt) {
+					formData.append("prompt", data.prompt);
+				}
+				return formData;
+			})(),
+		})
+		.then(async (res) => {
+			if (data.options !== "/pdf" && data.options !== "/screenshot") {
+				const json = await res.json();
+				setResponse(json);
+			} else {
+				const blob = await res.blob();
+				const url = URL.createObjectURL(blob);
+				console.log("response url: ", url);
+				setResponse(url);
+			}
+		})
+		.catch((error) => {
+			console.error("Error:", error);
+			setResponse(null);
+			toast.error("An error occurred while processing your request.");
+		})
+		.finally(() => {
+			setLoading(false);
+		});
 	}
+
+	React.useEffect(() => {
+		setResponse(null);
+	}, [form.watch("options")]);
 
 	return (
 		<div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-			<main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
+			<main className="flex min-h-screen w-full flex-col items-center py-32 px-16 bg-white dark:bg-black sm:items-start">
 				<div className="w-full flex justify-between items-center mb-16">
 					<Image
 						className="dark:invert"
@@ -169,18 +206,18 @@ export default function Home() {
 										)}
 									/>
 									<Controller
-										name="title"
+										name="url"
 										control={form.control}
 										render={({ field, fieldState }) => (
 											<Field data-invalid={fieldState.invalid}>
-												<FieldLabel htmlFor="form-rhf-demo-title">
-													Bug Title
+												<FieldLabel htmlFor="form-rhf-demo-url">
+													URL
 												</FieldLabel>
 												<Input
 													{...field}
-													id="form-rhf-demo-title"
+													id="form-rhf-demo-url"
 													aria-invalid={fieldState.invalid}
-													placeholder="Login button not working on mobile"
+													placeholder="https://example.com"
 													autoComplete="off"
 												/>
 												{fieldState.invalid && (
@@ -189,41 +226,97 @@ export default function Home() {
 											</Field>
 										)}
 									/>
-									<Controller
-										name="description"
-										control={form.control}
-										render={({ field, fieldState }) => (
-											<Field data-invalid={fieldState.invalid}>
-												<FieldLabel htmlFor="form-rhf-demo-description">
-													Description
-												</FieldLabel>
-												<InputGroup>
-													<InputGroupTextarea
-														{...field}
-														id="form-rhf-demo-description"
-														placeholder="I'm having an issue with the login button on mobile."
-														rows={6}
-														className="min-h-24 resize-none"
-														aria-invalid={fieldState.invalid}
-													/>
-													<InputGroupAddon align="block-end">
-														<InputGroupText className="tabular-nums">
-															{field.value?.length}/100 characters
-														</InputGroupText>
-													</InputGroupAddon>
-												</InputGroup>
-												<FieldDescription>
-													Include steps to reproduce, expected behavior, and what
-													actually happened.
-												</FieldDescription>
-												{fieldState.invalid && (
-													<FieldError errors={[fieldState.error]} />
-												)}
-											</Field>
-										)}
-									/>
+									{form.watch("options") === "/json" && (
+										<Controller
+											name="prompt"
+											control={form.control}
+											render={({ field, fieldState }) => (
+												<Field data-invalid={fieldState.invalid}>
+													<FieldLabel htmlFor="form-rhf-demo-prompt">
+														Prompt (for JSON option)
+													</FieldLabel>
+													<InputGroup>
+														<InputGroupTextarea
+															{...field}
+															id="form-rhf-demo-prompt"
+															placeholder="I'm having an issue with the login button on mobile."
+															rows={6}
+															className="min-h-24 resize-none"
+															aria-invalid={fieldState.invalid}
+														/>
+														<InputGroupAddon align="block-end">
+															<InputGroupText className="tabular-nums">
+																{field.value?.length}/100 characters
+															</InputGroupText>
+														</InputGroupAddon>
+													</InputGroup>
+													<FieldDescription>
+														Provide a prompt to guide the data extraction process.
+													</FieldDescription>
+													{fieldState.invalid && (
+														<FieldError errors={[fieldState.error]} />
+													)}
+												</Field>
+											)}
+										/>
+									)}
 								</FieldGroup>
 							</form>
+
+							<p className="leading-none font-semibold mt-7 mb-3">
+								Preview :
+							</p>
+
+							{!loading && response ? (
+								<>
+									{(form.getValues("options") === "/content") && response && (
+										<div className="w-full" style={{ height: '500px' }}>
+											<WebPreview defaultUrl={form.watch("url")}>
+												<WebPreviewBody />
+											</WebPreview>
+										</div>
+									)}
+
+									{(form.getValues("options") === "/pdf") && response && (
+										<div className="w-full" style={{ height: '500px' }}>
+											<iframe
+												src={response}
+												title="PDF Preview"
+												className="w-full h-full border-0"
+											 />
+										</div>
+									)}
+
+									{(form.getValues("options") === "/screenshot") && response && (
+										<div className="w-full" style={{ height: '500px' }}>
+											<WebPreview defaultUrl={response}>
+												<WebPreviewBody />
+											</WebPreview>
+										</div>
+									)}
+
+									{(form.getValues("options") === "/snapshot" || form.getValues("options") === "/json" || form.getValues("options") === "/links" || form.getValues("options") === "/scrape"  || form.getValues("options") === "/markdown") && response && (
+										<CodeEditor
+											writing={false}
+											className="w-full h-[500px]"
+											lang={form.getValues("options") === "/markdown" ? "markdown" : (form.getValues("options") === "/snapshot") ? "html" : "javascript"}
+											title={form.getValues("options") === "/markdown" ? "response.md" : (form.getValues("options") === "/snapshot") ? "response.html" : "response.json"}
+											icon={<Settings />}
+											copyButton
+										>
+											{form.getValues("options") === "/markdown" || form.getValues("options") === "/snapshot"  ? response.data : JSON.stringify(response.data, null, 2)}
+										</CodeEditor>
+									)}
+								</>
+							) : (!loading && !response) ? (
+								<div className="w-full h-[500px] flex items-center justify-center">
+									<p className="text-muted-foreground">No preview available</p>
+								</div>
+							) : (
+								<div className="flex flex-col space-y-3">
+									<Skeleton className="h-[500px] w-full rounded-xl" />
+								</div>
+							)}
 						</CardContent>
 						<CardFooter>
 							<Field orientation="horizontal">
