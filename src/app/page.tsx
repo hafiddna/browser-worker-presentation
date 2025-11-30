@@ -108,7 +108,7 @@ export default function Home() {
 				<div className="w-full flex justify-between items-center mb-16">
 					<Image
 						className="dark:invert"
-						src="/next.svg"
+						src="/cloudflare.svg"
 						alt="Next.js logo"
 						width={100}
 						height={20}
