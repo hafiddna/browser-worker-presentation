@@ -118,11 +118,22 @@ export default function Home() {
 			if (data.options !== "/pdf" && data.options !== "/screenshot") {
 				const json = await res.json();
 				setResponse(json);
+				
+				// Show R2 storage confirmation for markdown
+				if (data.options === "/markdown" && json.r2Key) {
+					toast.success(`Markdown saved to R2: ${json.r2Key}`);
+				}
 			} else {
 				const blob = await res.blob();
 				const url = URL.createObjectURL(blob);
 				console.log("response url: ", url);
 				setResponse(url);
+				
+				// Show R2 storage confirmation for PDF
+				const r2Key = res.headers.get('x-r2-key');
+				if (data.options === "/pdf" && r2Key) {
+					toast.success(`PDF saved to R2: ${r2Key}`);
+				}
 			}
 		})
 		.catch((error) => {
