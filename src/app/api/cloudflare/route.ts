@@ -4,8 +4,8 @@ import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
 
 export async function POST(request: NextRequest): Promise<Response> {
-	const apiToken = process.env.CLOUDFLARE_API_TOKEN ?? "";
-	const account_id = process.env.CLOUDFLARE_ACCOUNT_ID ?? "";
+	const apiToken = process.env.CLOUDFLARE_OLD_API_TOKEN ?? "";
+	const account_id = process.env.CLOUDFLARE_OLD_ACCOUNT_ID ?? "";
 	const bucketName = process.env.CLOUDFLARE_R2_BUCKET_NAME ?? "";
 
 	// R2 configuration
