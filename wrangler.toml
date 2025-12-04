@@ -14,5 +14,5 @@ bucket_name = "hafid-learn-r2-object-storage"
 
 # Environment variables (secrets should be set via `wrangler secret put`)
 [vars]
-CLOUDFLARE_ACCOUNT_ID = "54fbb853fb1e8932910e6aba19e1f918"
+CLOUDFLARE_ACCOUNT_ID = "444d6c9c3590912e495550f91435d901"
 
